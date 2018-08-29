@@ -1,6 +1,7 @@
 return {
   no_consumer = true,
   fields = {
-    say_hello = { type = "boolean", default = true }
+    source_header = { type = "string", required = true },
+    target_header = { type = "string", required = true },
   }
 }
