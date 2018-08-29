@@ -2,7 +2,7 @@ local BasePlugin = require "kong.plugins.base_plugin"
 
 local HeaderBasedRequestTerminationHandler = BasePlugin:extend()
 
-HeaderBasedRequestTerminationHandler.PRIORITY = 2000
+HeaderBasedRequestTerminationHandler.PRIORITY = 902
 
 function HeaderBasedRequestTerminationHandler:new()
   HeaderBasedRequestTerminationHandler.super.new(self, "header-based-request-termination")
