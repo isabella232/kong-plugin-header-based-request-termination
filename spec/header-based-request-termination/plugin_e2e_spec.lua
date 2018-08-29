@@ -10,9 +10,10 @@ end
 local function setup_test_env()
   helpers.dao:truncate_tables()
 
+  local config = { source_header = 'X-Source-Id', target_header = 'X-Target-Id' }
   local service = get_response_body(TestHelper.setup_service())
   local route = get_response_body(TestHelper.setup_route_for_service(service.id))
-  local plugin = get_response_body(TestHelper.setup_plugin_for_service(service.id, 'header-based-request-termination'))
+  local plugin = get_response_body(TestHelper.setup_plugin_for_service(service.id, 'header-based-request-termination', config))
   local consumer = get_response_body(TestHelper.setup_consumer('TestUser'))
   return service, route, plugin, consumer
 end
@@ -56,28 +57,4 @@ describe("Plugin: header-based-request-termination (access)", function()
       assert.is_equal(api_id, json.api_id)
     end)
   end)
-
-  describe("Response", function()
-    local service, route, plugin, consumer
-
-    before_each(function()
-      service, route, plugin, consumer = setup_test_env()
-    end)
-
-    it("added the header", function()
-      local res = assert(helpers.proxy_client():send {
-        method = "GET",
-        path = "/request",
-        headers = {
-          ["Host"] = "test1.com"
-        }
-      })
-
-      assert.res_status(200, res)
-      assert.response(res).has.header("Hello-World")
-      local header_value = res.headers["Hello-World"]
-      assert.is_equal("Hey!", header_value)
-    end)
-  end)
-
 end)
