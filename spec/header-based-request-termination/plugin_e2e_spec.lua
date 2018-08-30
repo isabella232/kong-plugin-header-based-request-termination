@@ -10,11 +10,11 @@ end
 local function setup_test_env()
     TestHelper.truncate_tables()
 
-    local config = { source_header = 'X-Source-Id', target_header = 'X-Target-Id' }
+    local config = { source_header = "X-Source-Id", target_header = "X-Target-Id" }
     local service = get_response_body(TestHelper.setup_service())
     local route = get_response_body(TestHelper.setup_route_for_service(service.id))
-    local plugin = get_response_body(TestHelper.setup_plugin_for_service(service.id, 'header-based-request-termination', config))
-    local consumer = get_response_body(TestHelper.setup_consumer('TestUser'))
+    local plugin = get_response_body(TestHelper.setup_plugin_for_service(service.id, "header-based-request-termination", config))
+    local consumer = get_response_body(TestHelper.setup_consumer("TestUser"))
     return service, route, plugin, consumer
 end
 
@@ -28,12 +28,13 @@ describe("Plugin: header-based-request-termination (access)", function()
         helpers.stop_kong(nil)
     end)
 
-    describe("Admin API", function()
-        local service, route, plugin, consumer
+    local service, route, plugin, consumer
 
-        before_each(function()
-            service, route, plugin, consumer = setup_test_env()
-        end)
+    before_each(function()
+        service, route, plugin, consumer = setup_test_env()
+    end)
+
+    describe("Admin API", function()
 
         it("registered the plugin globally", function()
             local res = assert(helpers.admin_client():send {
@@ -85,8 +86,6 @@ describe("Plugin: header-based-request-termination (access)", function()
                 local raw_response_body = assert.res_status(200, get_response)
                 local body = cjson.decode(raw_response_body)
 
-                require "pl.pretty".dump(body)
-
                 assert.is_equal(body.data[1].source_identifier, "test-integration")
                 assert.is_equal(body.data[1].target_identifier, "*")
             end)
@@ -118,14 +117,68 @@ describe("Plugin: header-based-request-termination (access)", function()
                 }
 
                 local post_response = assert(helpers.admin_client():send(requestSettings))
-
                 assert.res_status(201, post_response)
 
                 local post_response = assert(helpers.admin_client():send(requestSettings))
-
                 assert.res_status(400, post_response)
             end)
 
+        end)
+
+    end)
+
+    describe("Header based request termination", function()
+
+        it("should reject request when source identifier and target identifier combination is not stored", function()
+            local response = assert(helpers.proxy_client():send({
+                method = "GET",
+                path = "/test",
+                headers = {
+                    ["X-Source-Id"] = "test-integration",
+                    ["X-Target-Id"] = "123456789",
+                }
+            }))
+
+            assert.res_status(403, response)
+        end)
+
+        it("should not reject request when target identifier is not present on request", function()
+            local response = assert(helpers.proxy_client():send({
+                method = "GET",
+                path = "/test",
+                headers = {
+                    ["X-Source-Id"] = "test-integration",
+                }
+            }))
+
+            assert.res_status(200, response)
+        end)
+
+        it("should not reject request when source identifier is not stored", function()
+            local post_response = assert(helpers.admin_client():send({
+                method = "POST",
+                path = "/integration-access-settings",
+                body = {
+                    source_identifier = "other-test-integration",
+                    target_identifier = "*",
+                },
+                headers = {
+                    ["Content-Type"] = "application/json"
+                }
+            }))
+
+            assert.res_status(201, post_response)
+
+            local response = assert(helpers.proxy_client():send({
+                method = "GET",
+                path = "/test",
+                headers = {
+                    ["X-Source-Id"] = "other-test-integration",
+                    ["X-Target-Id"] = "123456789",
+                }
+            }))
+
+            assert.res_status(200, response)
         end)
 
     end)

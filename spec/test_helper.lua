@@ -23,7 +23,7 @@ function TestHelper.setup_route_for_service(service_id)
         method = "POST",
         path = "/services/" .. service_id .. "/routes/",
         body = {
-            paths = {'/'},
+            paths = { "/test" },
         },
         headers = {
             ["Content-Type"] = "application/json"
