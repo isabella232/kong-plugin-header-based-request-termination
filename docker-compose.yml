@@ -4,6 +4,8 @@ services:
   kong:
     build: .
     depends_on:
+      mockbin:
+        condition: service_started
       kong-database:
         condition: service_healthy
     environment:
