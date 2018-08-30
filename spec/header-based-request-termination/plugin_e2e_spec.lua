@@ -8,15 +8,13 @@ local function get_response_body(response)
 end
 
 local function setup_test_env()
-    TestHelper.truncate_tables()
-
     local config = { source_header = "X-Source-Id", target_header = "X-Target-Id" }
     local service = get_response_body(TestHelper.setup_service())
     local route = get_response_body(TestHelper.setup_route_for_service(service.id))
     local plugin = get_response_body(TestHelper.setup_plugin_for_service(service.id, "header-based-request-termination", config))
     local consumer = get_response_body(TestHelper.setup_consumer("TestUser"))
     return service, route, plugin, consumer
-end
+endgit
 
 describe("Plugin: header-based-request-termination (access)", function()
 
@@ -31,7 +29,12 @@ describe("Plugin: header-based-request-termination (access)", function()
     local service, route, plugin, consumer
 
     before_each(function()
+        TestHelper.truncate_tables()
         service, route, plugin, consumer = setup_test_env()
+    end)
+
+    after_each(function()
+        TestHelper.truncate_tables()
     end)
 
     describe("Admin API", function()
