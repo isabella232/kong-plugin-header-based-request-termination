@@ -14,7 +14,7 @@ local function setup_test_env()
     local plugin = get_response_body(TestHelper.setup_plugin_for_service(service.id, "header-based-request-termination", config))
     local consumer = get_response_body(TestHelper.setup_consumer("TestUser"))
     return service, route, plugin, consumer
-endgit
+end
 
 describe("Plugin: header-based-request-termination (access)", function()
 
