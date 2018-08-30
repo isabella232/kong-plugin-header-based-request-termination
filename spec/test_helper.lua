@@ -61,4 +61,9 @@ function TestHelper.setup_consumer(customer_name)
     })
 end
 
+function TestHelper.truncate_tables()
+    dao = select(3, helpers.get_db_utils())
+    dao:truncate_tables()
+end
+
 return TestHelper

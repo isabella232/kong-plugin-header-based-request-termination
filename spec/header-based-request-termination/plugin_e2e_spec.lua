@@ -8,7 +8,7 @@ local function get_response_body(response)
 end
 
 local function setup_test_env()
-    helpers.dao:truncate_tables()
+    TestHelper.truncate_tables()
 
     local config = { source_header = 'X-Source-Id', target_header = 'X-Target-Id' }
     local service = get_response_body(TestHelper.setup_service())
@@ -89,6 +89,41 @@ describe("Plugin: header-based-request-termination (access)", function()
 
                 assert.is_equal(body.data[1].source_identifier, "test-integration")
                 assert.is_equal(body.data[1].target_identifier, "*")
+            end)
+
+            it("should not enable to save access settings without identifiers", function()
+                local post_response = assert(helpers.admin_client():send({
+                    method = "POST",
+                    path = "/integration-access-settings",
+                    body = {},
+                    headers = {
+                        ["Content-Type"] = "application/json"
+                    }
+                }))
+
+                assert.res_status(400, post_response)
+            end)
+
+            it("should not enable to save the same access setting", function()
+                local requestSettings = {
+                    method = "POST",
+                    path = "/integration-access-settings",
+                    body = {
+                        source_identifier = "test-integration",
+                        target_identifier = "*",
+                    },
+                    headers = {
+                        ["Content-Type"] = "application/json"
+                    }
+                }
+
+                local post_response = assert(helpers.admin_client():send(requestSettings))
+
+                assert.res_status(201, post_response)
+
+                local post_response = assert(helpers.admin_client():send(requestSettings))
+
+                assert.res_status(400, post_response)
             end)
 
         end)
