@@ -227,7 +227,6 @@ describe("Plugin: header-based-request-termination (access)", function()
                 setup_test_env({
                     source_header = "X-Source-Id",
                     target_header = "X-Target-Id",
-                    message = "So long and thanks for all the fish!",
                     status_code = expectedStatusCode
                 })
 
@@ -241,6 +240,33 @@ describe("Plugin: header-based-request-termination (access)", function()
                 }))
 
                 assert.res_status(expectedStatusCode, response)
+            end)
+
+        end)
+
+        context("with custom config", function()
+
+            before_each(function()
+                TestHelper.truncate_tables()
+            end)
+
+            it("should not reject request if log only mode enabled", function()
+                setup_test_env({
+                    source_header = "X-Source-Id",
+                    target_header = "X-Target-Id",
+                    log_only = true
+                })
+
+                local response = assert(helpers.proxy_client():send({
+                    method = "GET",
+                    path = "/test",
+                    headers = {
+                        ["X-Source-Id"] = "test-integration",
+                        ["X-Target-Id"] = "123456789",
+                    }
+                }))
+
+                assert.res_status(200, response)
             end)
 
         end)
