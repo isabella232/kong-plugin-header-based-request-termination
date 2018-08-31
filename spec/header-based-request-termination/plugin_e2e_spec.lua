@@ -165,6 +165,18 @@ describe("Plugin: header-based-request-termination (access)", function()
                 assert.res_status(200, response)
             end)
 
+            it("should allow request when source identifier is not present on request", function()
+                local response = assert(helpers.proxy_client():send({
+                    method = "GET",
+                    path = "/test",
+                    headers = {
+                        ["X-Target-Id"] = "123456789",
+                    }
+                }))
+
+                assert.res_status(200, response)
+            end)
+
             it("should allow request when target identifier is configured as a wildcard in settings", function()
                 local post_response = assert(helpers.admin_client():send({
                     method = "POST",

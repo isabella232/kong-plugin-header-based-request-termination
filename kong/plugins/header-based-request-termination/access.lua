@@ -24,6 +24,11 @@ function Access.execute(conf)
     local source_header_value = headers[conf.source_header]
     local target_header_value = headers[conf.target_header]
 
+    if not source_header_value then
+        error('Source header is not present')
+        return
+    end
+
     if not target_header_value then
         return
     end
