@@ -16,6 +16,7 @@ end
 local SCHEMA = {
     primary_key = { "id" },
     table = "integration_access_settings",
+    cache_key = { "source_identifier", "target_identifier" },
     fields = {
         id = { type = "id", dao_insert_value = true },
         source_identifier = { type = "string", required = true, func = check_unique_for_both_identifiers },

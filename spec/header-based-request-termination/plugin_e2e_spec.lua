@@ -194,7 +194,7 @@ describe("Plugin: header-based-request-termination (access)", function()
 
         end)
 
-        context("with custom config", function()
+        context("with custom reject config", function()
 
             before_each(function()
                 TestHelper.truncate_tables()
@@ -244,7 +244,7 @@ describe("Plugin: header-based-request-termination (access)", function()
 
         end)
 
-        context("with custom config", function()
+        context("with log only config", function()
 
             before_each(function()
                 TestHelper.truncate_tables()
@@ -256,6 +256,60 @@ describe("Plugin: header-based-request-termination (access)", function()
                     target_header = "X-Target-Id",
                     log_only = true
                 })
+
+                local response = assert(helpers.proxy_client():send({
+                    method = "GET",
+                    path = "/test",
+                    headers = {
+                        ["X-Source-Id"] = "test-integration",
+                        ["X-Target-Id"] = "123456789",
+                    }
+                }))
+
+                assert.res_status(200, response)
+            end)
+
+        end)
+
+        context("with caching", function()
+
+            before_each(function()
+                TestHelper.truncate_tables()
+            end)
+
+            it("should not reject request if log only mode enabled", function()
+                setup_test_env({
+                    source_header = "X-Source-Id",
+                    target_header = "X-Target-Id",
+                })
+
+                local setting_response = assert(helpers.admin_client():send({
+                    method = "POST",
+                    path = "/integration-access-settings",
+                    body = {
+                        source_identifier = "test-integration",
+                        target_identifier = "*",
+                    },
+                    headers = {
+                        ["Content-Type"] = "application/json"
+                    }
+                }))
+
+                assert.res_status(201, setting_response)
+
+                local response = assert(helpers.proxy_client():send({
+                    method = "GET",
+                    path = "/test",
+                    headers = {
+                        ["X-Source-Id"] = "test-integration",
+                        ["X-Target-Id"] = "123456789",
+                    }
+                }))
+
+                assert.res_status(200, response)
+
+                local dao = select(3, helpers.get_db_utils())
+                pcall(dao.truncate, dao)
 
                 local response = assert(helpers.proxy_client():send({
                     method = "GET",
