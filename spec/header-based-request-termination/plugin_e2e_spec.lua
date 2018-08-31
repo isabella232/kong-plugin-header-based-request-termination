@@ -198,11 +198,16 @@ describe("Plugin: header-based-request-termination (access)", function()
 
             before_each(function()
                 TestHelper.truncate_tables()
-                local default_config = { source_header = "X-Source-Id", target_header = "X-Target-Id", message = "So long and thanks for all the fish!" }
-                service, route, plugin, consumer = setup_test_env(default_config)
             end)
 
-            it("should respond hith custom message on rejection when configured accordingly", function()
+            it("should respond with custom message on rejection when configured accordingly", function()
+                local expectedMessage = "So long and thanks for all the fish!"
+                setup_test_env({
+                    source_header = "X-Source-Id",
+                    target_header = "X-Target-Id",
+                    message = expectedMessage
+                })
+
                 local response = assert(helpers.proxy_client():send({
                     method = "GET",
                     path = "/test",
@@ -212,9 +217,30 @@ describe("Plugin: header-based-request-termination (access)", function()
                     }
                 }))
 
-                local body = assert.res_status(403, response)
+                local body = response:read_body()
                 local json = cjson.decode(body)
-                assert.same({ message = "So long and thanks for all the fish!" }, json)
+                assert.same({ message = expectedMessage }, json)
+            end)
+
+            it("should respond with custom status code on rejection when configured accordingly", function()
+                local expectedStatusCode = 503
+                setup_test_env({
+                    source_header = "X-Source-Id",
+                    target_header = "X-Target-Id",
+                    message = "So long and thanks for all the fish!",
+                    status_code = expectedStatusCode
+                })
+
+                local response = assert(helpers.proxy_client():send({
+                    method = "GET",
+                    path = "/test",
+                    headers = {
+                        ["X-Source-Id"] = "test-integration",
+                        ["X-Target-Id"] = "123456789",
+                    }
+                }))
+
+                assert.res_status(expectedStatusCode, response)
             end)
 
         end)
