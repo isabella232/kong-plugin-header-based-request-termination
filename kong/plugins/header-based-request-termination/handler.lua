@@ -24,7 +24,7 @@ function HeaderBasedRequestTerminationHandler:access(conf)
     local access_settings = singletons.dao.integration_access_settings:find_all({ source_identifier = source_header_value, target_identifier = '*' })
 
     if #access_settings == 0 then
-        return responses.send(403)
+        return responses.send(403, conf.message)
     end
 
 end

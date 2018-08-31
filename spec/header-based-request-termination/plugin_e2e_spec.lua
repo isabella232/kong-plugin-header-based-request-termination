@@ -7,8 +7,7 @@ local function get_response_body(response)
     return cjson.decode(body)
 end
 
-local function setup_test_env()
-    local config = { source_header = "X-Source-Id", target_header = "X-Target-Id" }
+local function setup_test_env(config)
     local service = get_response_body(TestHelper.setup_service())
     local route = get_response_body(TestHelper.setup_route_for_service(service.id))
     local plugin = get_response_body(TestHelper.setup_plugin_for_service(service.id, "header-based-request-termination", config))
@@ -28,16 +27,17 @@ describe("Plugin: header-based-request-termination (access)", function()
 
     local service, route, plugin, consumer
 
-    before_each(function()
-        TestHelper.truncate_tables()
-        service, route, plugin, consumer = setup_test_env()
-    end)
-
     after_each(function()
         TestHelper.truncate_tables()
     end)
 
     describe("Admin API", function()
+
+        before_each(function()
+            TestHelper.truncate_tables()
+            local default_config = { source_header = "X-Source-Id", target_header = "X-Target-Id" }
+            service, route, plugin, consumer = setup_test_env(default_config)
+        end)
 
         it("registered the plugin globally", function()
             local res = assert(helpers.admin_client():send {
@@ -132,56 +132,91 @@ describe("Plugin: header-based-request-termination (access)", function()
 
     describe("Header based request termination", function()
 
-        it("should reject request when source identifier and target identifier combination is not stored", function()
-            local response = assert(helpers.proxy_client():send({
-                method = "GET",
-                path = "/test",
-                headers = {
-                    ["X-Source-Id"] = "test-integration",
-                    ["X-Target-Id"] = "123456789",
-                }
-            }))
+        context("with default config", function()
 
-            assert.res_status(403, response)
+            before_each(function()
+                TestHelper.truncate_tables()
+                local default_config = { source_header = "X-Source-Id", target_header = "X-Target-Id" }
+                service, route, plugin, consumer = setup_test_env(default_config)
+            end)
+
+            it("should reject request when source identifier and target identifier combination is not stored", function()
+                local response = assert(helpers.proxy_client():send({
+                    method = "GET",
+                    path = "/test",
+                    headers = {
+                        ["X-Source-Id"] = "test-integration",
+                        ["X-Target-Id"] = "123456789",
+                    }
+                }))
+
+                assert.res_status(403, response)
+            end)
+
+            it("should allow request when target identifier is not present on request", function()
+                local response = assert(helpers.proxy_client():send({
+                    method = "GET",
+                    path = "/test",
+                    headers = {
+                        ["X-Source-Id"] = "test-integration",
+                    }
+                }))
+
+                assert.res_status(200, response)
+            end)
+
+            it("should allow request when target identifier is configured as a wildcard in settings", function()
+                local post_response = assert(helpers.admin_client():send({
+                    method = "POST",
+                    path = "/integration-access-settings",
+                    body = {
+                        source_identifier = "other-test-integration",
+                        target_identifier = "*",
+                    },
+                    headers = {
+                        ["Content-Type"] = "application/json"
+                    }
+                }))
+
+                assert.res_status(201, post_response)
+
+                local response = assert(helpers.proxy_client():send({
+                    method = "GET",
+                    path = "/test",
+                    headers = {
+                        ["X-Source-Id"] = "other-test-integration",
+                        ["X-Target-Id"] = "123456789",
+                    }
+                }))
+
+                assert.res_status(200, response)
+            end)
+
         end)
 
-        it("should not reject request when target identifier is not present on request", function()
-            local response = assert(helpers.proxy_client():send({
-                method = "GET",
-                path = "/test",
-                headers = {
-                    ["X-Source-Id"] = "test-integration",
-                }
-            }))
+        context("with custom config", function()
 
-            assert.res_status(200, response)
-        end)
+            before_each(function()
+                TestHelper.truncate_tables()
+                local default_config = { source_header = "X-Source-Id", target_header = "X-Target-Id", message = "So long and thanks for all the fish!" }
+                service, route, plugin, consumer = setup_test_env(default_config)
+            end)
 
-        it("should not reject request when source identifier is not stored", function()
-            local post_response = assert(helpers.admin_client():send({
-                method = "POST",
-                path = "/integration-access-settings",
-                body = {
-                    source_identifier = "other-test-integration",
-                    target_identifier = "*",
-                },
-                headers = {
-                    ["Content-Type"] = "application/json"
-                }
-            }))
+            it("should respond hith custom message on rejection when configured accordingly", function()
+                local response = assert(helpers.proxy_client():send({
+                    method = "GET",
+                    path = "/test",
+                    headers = {
+                        ["X-Source-Id"] = "test-integration",
+                        ["X-Target-Id"] = "123456789",
+                    }
+                }))
 
-            assert.res_status(201, post_response)
+                local body = assert.res_status(403, response)
+                local json = cjson.decode(body)
+                assert.same({ message = "So long and thanks for all the fish!" }, json)
+            end)
 
-            local response = assert(helpers.proxy_client():send({
-                method = "GET",
-                path = "/test",
-                headers = {
-                    ["X-Source-Id"] = "other-test-integration",
-                    ["X-Target-Id"] = "123456789",
-                }
-            }))
-
-            assert.res_status(200, response)
         end)
 
     end)
