@@ -126,6 +126,36 @@ describe("Plugin: header-based-request-termination (access)", function()
                 assert.res_status(400, post_response)
             end)
 
+            it("should save access information into the database for a specific customer id", function()
+                local post_response = assert(helpers.admin_client():send({
+                    method = "POST",
+                    path = "/integration-access-settings",
+                    body = {
+                        source_identifier = "test-integration",
+                        target_identifier = "1234567890",
+                    },
+                    headers = {
+                        ["Content-Type"] = "application/json"
+                    }
+                }))
+
+                assert.res_status(201, post_response)
+
+                local get_response = assert(helpers.admin_client():send({
+                    method = "GET",
+                    path = "/integration-access-settings",
+                    headers = {
+                        ["Content-Type"] = "application/json"
+                    }
+                }))
+
+                local raw_response_body = assert.res_status(200, get_response)
+                local body = cjson.decode(raw_response_body)
+
+                assert.is_equal(body.data[1].source_identifier, "test-integration")
+                assert.is_equal(body.data[1].target_identifier, "1234567890")
+            end)
+
         end)
 
     end)
@@ -198,6 +228,33 @@ describe("Plugin: header-based-request-termination (access)", function()
                     headers = {
                         ["X-Source-Id"] = "other-test-integration",
                         ["X-Target-Id"] = "123456789",
+                    }
+                }))
+
+                assert.res_status(200, response)
+            end)
+
+            it("should allow request when target identifier is configured as a specific customer ID in settings", function()
+                local post_response = assert(helpers.admin_client():send({
+                    method = "POST",
+                    path = "/integration-access-settings",
+                    body = {
+                        source_identifier = "test-integration",
+                        target_identifier = "1234567890",
+                    },
+                    headers = {
+                        ["Content-Type"] = "application/json"
+                    }
+                }))
+
+                assert.res_status(201, post_response)
+
+                local response = assert(helpers.proxy_client():send({
+                    method = "GET",
+                    path = "/test",
+                    headers = {
+                        ["X-Source-Id"] = "test-integration",
+                        ["X-Target-Id"] = "1234567890",
                     }
                 }))
 
@@ -289,7 +346,7 @@ describe("Plugin: header-based-request-termination (access)", function()
                 TestHelper.truncate_tables()
             end)
 
-            it("should not reject request if log only mode enabled", function()
+            it("should not reject request if db is down", function()
                 setup_test_env({
                     source_header = "X-Source-Id",
                     target_header = "X-Target-Id",
@@ -299,7 +356,7 @@ describe("Plugin: header-based-request-termination (access)", function()
                     method = "POST",
                     path = "/integration-access-settings",
                     body = {
-                        source_identifier = "test-integration",
+                        source_identifier = "test-integration1",
                         target_identifier = "*",
                     },
                     headers = {
@@ -313,7 +370,7 @@ describe("Plugin: header-based-request-termination (access)", function()
                     method = "GET",
                     path = "/test",
                     headers = {
-                        ["X-Source-Id"] = "test-integration",
+                        ["X-Source-Id"] = "test-integration1",
                         ["X-Target-Id"] = "123456789",
                     }
                 }))
@@ -327,7 +384,7 @@ describe("Plugin: header-based-request-termination (access)", function()
                     method = "GET",
                     path = "/test",
                     headers = {
-                        ["X-Source-Id"] = "test-integration",
+                        ["X-Source-Id"] = "test-integration1",
                         ["X-Target-Id"] = "123456789",
                     }
                 }))
