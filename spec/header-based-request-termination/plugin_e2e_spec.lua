@@ -158,6 +158,47 @@ describe("Plugin: header-based-request-termination (access)", function()
 
         end)
 
+        describe("DELETE access rule", function()
+            it("should delete access information from the database when it exists", function()
+                local post_response = assert(helpers.admin_client():send({
+                    method = "POST",
+                    path = "/integration-access-settings",
+                    body = {
+                        source_identifier = "test-integration",
+                        target_identifier = "*",
+                    },
+                    headers = {
+                        ["Content-Type"] = "application/json"
+                    }
+                }))
+
+                local setting_raw_response = assert.res_status(201, post_response)
+                local setting_id = cjson.decode(setting_raw_response)['id']
+
+                local get_response = assert(helpers.admin_client():send({
+                    method = "DELETE",
+                    path = "/integration-access-settings/"..setting_id,
+                    headers = {
+                        ["Content-Type"] = "application/json"
+                    }
+                }))
+
+                assert.res_status(204, get_response)
+            end)
+
+            it("should respond with 404 not found when access information does not exist in the database", function()
+                local get_response = assert(helpers.admin_client():send({
+                    method = "DELETE",
+                    path = "/integration-access-settings/14797c66-eabd-4db9-9cd8-5ed4a83aa98d",
+                    headers = {
+                        ["Content-Type"] = "application/json"
+                    }
+                }))
+
+                assert.res_status(404, get_response)
+            end)
+        end)
+
     end)
 
     describe("Header based request termination", function()
