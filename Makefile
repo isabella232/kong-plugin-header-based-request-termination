@@ -26,7 +26,8 @@ publish: ## Build and publish plugin to luarocks
 	docker-compose run --rm kong bash -c "cd /kong-plugins && chmod +x publish.sh && ./publish.sh"
 
 test: ## Run tests
-	docker-compose run --rm kong bash -c "cd /kong && bin/busted /kong-plugins/spec"
+	docker-compose run kong bash -c "cd /kong && bin/kong migrations up && bin/busted /kong-plugins/spec"
+	docker-compose down
 
 dev-env: ## Creates a service (myservice) and attaches a plugin to it (header-based-request-termination)
 	bash -c "curl -i -X POST --url http://localhost:8001/services/ --data 'name=testapi' --data 'protocol=http' --data 'host=mockbin' --data 'path=/request'"
