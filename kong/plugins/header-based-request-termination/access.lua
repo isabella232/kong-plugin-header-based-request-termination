@@ -2,9 +2,9 @@ local singletons = require "kong.singletons"
 local responses = require "kong.tools.responses"
 local Logger = require "logger"
 
-local function log_termination(query)
+local function log_termination(message, query)
     Logger.getInstance(ngx):logInfo({
-        ["msg"] = "Request terminated based on headers",
+        ["msg"] = message,
         ["uri"] = ngx.var.request_uri,
         ["source_identifier"] = query.source_identifier,
         ["target_identifier"] = query.target_identifier
@@ -35,8 +35,13 @@ function Access.execute(conf)
     local target_header_value = headers[conf.target_header]
 
     if not source_header_value then
-        error('Source header is not present')
-        return
+        if conf.log_only then
+            log_termination("Request terminated based on missing source header", {
+                target_identifier = target_header_value
+            })
+            return
+        end
+        responses.send(conf.status_code, conf.message)
     end
 
     if not target_header_value then
@@ -52,7 +57,7 @@ function Access.execute(conf)
 
     if not has_access then
         if conf.log_only then
-            log_termination({
+            log_termination("Request terminated based on headers", {
                 source_identifier = source_header_value,
                 target_identifier = target_header_value
             })

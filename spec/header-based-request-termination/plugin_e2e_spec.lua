@@ -249,16 +249,13 @@ describe("Plugin: header-based-request-termination (access)", function()
                 assert.res_status(200, response)
             end)
 
-            it("should allow request when source identifier is not present on request", function()
+            it("should block request when source identifier is not present on request", function()
                 local response = assert(helpers.proxy_client():send({
                     method = "GET",
                     path = "/test",
-                    headers = {
-                        ["X-Target-Id"] = "123456789",
-                    }
                 }))
 
-                assert.res_status(200, response)
+                assert.res_status(403, response)
             end)
 
             it("should allow request when target identifier is configured as a wildcard in settings", function()
@@ -367,13 +364,32 @@ describe("Plugin: header-based-request-termination (access)", function()
 
         end)
 
-        context("with log only config", function()
+        context("with log only enabled", function()
 
             before_each(function()
                 TestHelper.truncate_tables()
             end)
 
-            it("should not reject request if log only mode enabled", function()
+            it("should not reject request when settings cannot be found", function()
+                setup_test_env({
+                    source_header = "X-Source-Id",
+                    target_header = "X-Target-Id",
+                    log_only = true
+                })
+
+                local response = assert(helpers.proxy_client():send({
+                    method = "GET",
+                    path = "/test",
+                    headers = {
+                        ["X-Source-Id"] = "test-integration",
+                        ["X-Target-Id"] = "123456789",
+                    }
+                }))
+
+                assert.res_status(200, response)
+            end)
+
+            it("should not reject request when source header is missing", function()
                 setup_test_env({
                     source_header = "X-Source-Id",
                     target_header = "X-Target-Id",
