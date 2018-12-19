@@ -43,6 +43,9 @@ function Access.execute(conf)
         return
     end
 
+    if source_header_value == target_header_value then
+        return
+    end
 
     local cache_key = singletons.dao.integration_access_settings:cache_key(source_header_value, target_header_value)
     local has_access = singletons.cache:get(cache_key, nil, query_access, singletons.dao, source_header_value, target_header_value)

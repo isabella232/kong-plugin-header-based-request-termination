@@ -224,6 +224,19 @@ describe("Plugin: header-based-request-termination (access)", function()
                 assert.res_status(403, response)
             end)
 
+            it("should allow passthrough when source identifier and target identifier are the same", function()
+                local response = assert(helpers.proxy_client():send({
+                    method = "GET",
+                    path = "/test",
+                    headers = {
+                        ["X-Source-Id"] = "some-customer-name",
+                        ["X-Target-Id"] = "some-customer-name",
+                    }
+                }))
+
+                assert.res_status(200, response)
+            end)
+
             it("should allow request when target identifier is not present on request", function()
                 local response = assert(helpers.proxy_client():send({
                     method = "GET",
