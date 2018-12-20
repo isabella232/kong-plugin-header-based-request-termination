@@ -3,7 +3,7 @@ local responses = require "kong.tools.responses"
 local Logger = require "logger"
 
 local function log_termination(message, query)
-    Logger.getInstance(ngx):logInfo({
+    Logger.getInstance(ngx):logWarning({
         ["msg"] = message,
         ["uri"] = ngx.var.request_uri,
         ["source_identifier"] = query.source_identifier,
