@@ -18,7 +18,7 @@ end
 describe("Plugin: header-based-request-termination (access)", function()
 
     setup(function()
-        helpers.start_kong({ custom_plugins = 'header-based-request-termination' })
+        helpers.start_kong({ plugins = 'header-based-request-termination' })
     end)
 
     teardown(function()
