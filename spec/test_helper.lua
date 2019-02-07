@@ -61,11 +61,4 @@ function TestHelper.setup_consumer(customer_name)
     })
 end
 
-function TestHelper.truncate_tables()
-    local database = select(2, helpers.get_db_utils())
-    for _, dao in pairs(database.daos) do
-        pcall(dao.truncate, dao)
-    end
-end
-
 return TestHelper

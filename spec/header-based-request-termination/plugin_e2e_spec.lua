@@ -28,13 +28,13 @@ describe("Plugin: header-based-request-termination (access)", function()
     local service, route, plugin, consumer
 
     after_each(function()
-        TestHelper.truncate_tables()
+        helpers.db:truncate()
     end)
 
     describe("Admin API", function()
 
         before_each(function()
-            TestHelper.truncate_tables()
+            helpers.db:truncate()
             local default_config = { source_header = "X-Source-Id", target_header = "X-Target-Id" }
             service, route, plugin, consumer = setup_test_env(default_config)
         end)
@@ -206,7 +206,7 @@ describe("Plugin: header-based-request-termination (access)", function()
         context("with default config", function()
 
             before_each(function()
-                TestHelper.truncate_tables()
+                helpers.db:truncate()
                 local default_config = { source_header = "X-Source-Id", target_header = "X-Target-Id" }
                 service, route, plugin, consumer = setup_test_env(default_config)
             end)
@@ -317,7 +317,7 @@ describe("Plugin: header-based-request-termination (access)", function()
         context("with custom reject config", function()
 
             before_each(function()
-                TestHelper.truncate_tables()
+                helpers.db:truncate()
             end)
 
             it("should respond with custom message on rejection when configured accordingly", function()
@@ -367,7 +367,7 @@ describe("Plugin: header-based-request-termination (access)", function()
         context("with log only enabled", function()
 
             before_each(function()
-                TestHelper.truncate_tables()
+                helpers.db:truncate()
             end)
 
             it("should not reject request when settings cannot be found", function()
@@ -413,7 +413,7 @@ describe("Plugin: header-based-request-termination (access)", function()
         context("with caching", function()
 
             before_each(function()
-                TestHelper.truncate_tables()
+                helpers.db:truncate()
             end)
 
             it("should not reject request if db is down", function()
@@ -446,9 +446,6 @@ describe("Plugin: header-based-request-termination (access)", function()
                 }))
 
                 assert.res_status(200, response)
-
-                local dao = select(3, helpers.get_db_utils())
-                pcall(dao.truncate, dao)
 
                 local response = assert(helpers.proxy_client():send({
                     method = "GET",
