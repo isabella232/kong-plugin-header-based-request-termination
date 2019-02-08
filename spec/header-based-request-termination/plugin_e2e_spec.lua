@@ -56,9 +56,7 @@ describe("Plugin: header-based-request-termination (access)", function()
                 method = "GET",
                 path = "/plugins/" ..plugin.id,
             })
-            local body = assert.res_status(200, res)
-            local json = cjson.decode(body)
-            assert.is_equal(api_id, json.api_id)
+            assert.res_status(200, res)
         end)
 
         describe("POST access rule", function()
