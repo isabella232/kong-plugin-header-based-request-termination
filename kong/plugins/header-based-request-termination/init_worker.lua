@@ -1,4 +1,4 @@
-local CacheWarmer = require 'kong.plugins.wsse.cache_warmer'
+local CacheWarmer = require 'kong.plugins.header-based-request-termination.cache_warmer'
 local singletons = require "kong.singletons"
 
 local function retrieve_key_from_access_setting(access_setting)
