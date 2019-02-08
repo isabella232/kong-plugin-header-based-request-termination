@@ -18,7 +18,7 @@ end
 describe("Plugin: header-based-request-termination (access)", function()
 
     setup(function()
-        helpers.start_kong({ plugins = 'header-based-request-termination' })
+        helpers.start_kong({ plugins = "header-based-request-termination" })
     end)
 
     teardown(function()
@@ -171,7 +171,7 @@ describe("Plugin: header-based-request-termination (access)", function()
                 }))
 
                 local setting_raw_response = assert.res_status(201, post_response)
-                local setting_id = cjson.decode(setting_raw_response)['id']
+                local setting_id = cjson.decode(setting_raw_response)["id"]
 
                 local get_response = assert(helpers.admin_client():send({
                     method = "DELETE",

@@ -8,8 +8,8 @@ function TestHelper.setup_service()
         method = "POST",
         path = "/services/",
         body = {
-            name = 'testservice',
-            url = 'http://mockbin:8080/request'
+            name = "testservice",
+            url = "http://mockbin:8080/request"
         },
         headers = {
             ["Content-Type"] = "application/json"

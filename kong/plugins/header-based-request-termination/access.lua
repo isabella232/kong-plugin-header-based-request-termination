@@ -14,7 +14,7 @@ end
 local function query_access(dao, source_identifier, target_identifier)
     local query_params_general = {
         source_identifier = source_identifier,
-        target_identifier = '*'
+        target_identifier = "*"
     }
     local query_params_specific = {
         source_identifier = source_identifier,
