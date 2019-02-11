@@ -1,12 +1,7 @@
 local helpers = require "spec.helpers"
 local cjson = require "cjson"
-local singletons = require "kong.singletons"
 
 describe("CacheWarmer", function()
-
-    setup(function()
-        singletons.dao = helpers.dao
-    end)
 
     before_each(function()
         helpers.db:truncate()

@@ -1,16 +1,16 @@
-local singletons = require "kong.singletons"
+local Errors = require "kong.dao.errors"
 
-local function check_unique_for_both_identifiers(_, integration_access_settings)
-    local access_settings = singletons.dao.integration_access_settings:find_all {
-        source_identifier = integration_access_settings.source_identifier,
-        target_identifier = integration_access_settings.target_identifier
-    }
+local function check_unique_for_both_identifiers(schema, config, dao, is_update)
+    local access_settings = dao:find_all({
+        source_identifier = config.source_identifier,
+        target_identifier = config.target_identifier
+    })
 
     if #access_settings > 0 then
-        return false, "Integration access setting already exists."
-    else
-        return true
+        return false, Errors.schema("Integration access setting already exists.")
     end
+
+    return true
 end
 
 local SCHEMA = {
@@ -19,9 +19,10 @@ local SCHEMA = {
     cache_key = { "source_identifier", "target_identifier" },
     fields = {
         id = { type = "id", dao_insert_value = true },
-        source_identifier = { type = "string", required = true, func = check_unique_for_both_identifiers },
+        source_identifier = { type = "string", required = true },
         target_identifier = { type = "string", required = true }
-    }
+    },
+    self_check = check_unique_for_both_identifiers
 }
 
 return { integration_access_settings = SCHEMA }
