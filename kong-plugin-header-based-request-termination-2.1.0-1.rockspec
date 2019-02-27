@@ -1,9 +1,9 @@
 package = "kong-plugin-header-based-request-termination"
-version = "2.0.0-1"
+version = "2.1.0-1"
 supported_platforms = {"linux", "macosx"}
 source = {
   url = "git+https://github.com/emartech/kong-plugin-header-based-request-termination.git",
-  tag = "2.0.0"
+  tag = "2.1.0"
 }
 description = {
   summary = "Terminate requests based on its headers.",
