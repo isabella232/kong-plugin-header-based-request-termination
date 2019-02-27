@@ -22,4 +22,13 @@ return {
               ALTER TABLE integration_access_settings DROP COLUMN darklaunch_mode;
             ]]
     },
+    {
+        name = "2019-02-27-151000_remove_darklaunch_mode",
+        up = [[
+               ALTER TABLE integration_access_settings DROP COLUMN darklaunch_mode;
+            ]],
+        down = [[
+               ALTER TABLE integration_access_settings ADD COLUMN darklaunch_mode boolean DEFAULT FALSE;
+            ]]
+    }
 }

@@ -43,5 +43,14 @@ return {
         end,
         down = function()
         end
+    },
+    {
+        name = "2019-02-27-151000_remove_darklaunch_mode",
+        up = [[
+              ALTER TABLE integration_access_settings DROP darklaunch_mode;
+            ]],
+        down = [[
+              ALTER TABLE integration_access_settings ADD darklaunch_mode TYPE boolean;
+            ]]
     }
 }
