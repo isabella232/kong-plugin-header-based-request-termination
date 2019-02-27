@@ -27,6 +27,10 @@ describe("Plugin: header-based-request-termination (access)", function()
 
     local service, route, plugin, consumer
 
+    before_each(function()
+        helpers.db:truncate()
+    end)
+
     after_each(function()
         helpers.db:truncate()
     end)
@@ -34,7 +38,6 @@ describe("Plugin: header-based-request-termination (access)", function()
     describe("Admin API", function()
 
         before_each(function()
-            helpers.db:truncate()
             local default_config = { source_header = "X-Source-Id", target_header = "X-Target-Id" }
             service, route, plugin, consumer = setup_test_env(default_config)
         end)
@@ -204,7 +207,6 @@ describe("Plugin: header-based-request-termination (access)", function()
         context("with default config", function()
 
             before_each(function()
-                helpers.db:truncate()
                 local default_config = { source_header = "X-Source-Id", target_header = "X-Target-Id" }
                 service, route, plugin, consumer = setup_test_env(default_config)
             end)
@@ -314,10 +316,6 @@ describe("Plugin: header-based-request-termination (access)", function()
 
         context("with custom reject config", function()
 
-            before_each(function()
-                helpers.db:truncate()
-            end)
-
             it("should respond with custom message on rejection when configured accordingly", function()
                 local expectedMessage = "So long and thanks for all the fish!"
                 setup_test_env({
@@ -364,10 +362,6 @@ describe("Plugin: header-based-request-termination (access)", function()
 
         context("with log only enabled", function()
 
-            before_each(function()
-                helpers.db:truncate()
-            end)
-
             it("should not reject request when settings cannot be found", function()
                 setup_test_env({
                     source_header = "X-Source-Id",
@@ -406,13 +400,253 @@ describe("Plugin: header-based-request-termination (access)", function()
                 assert.res_status(200, response)
             end)
 
+            context("with darklaunch mode enabled", function()
+
+                it("should add block decision as header", function()
+                    setup_test_env({
+                        source_header = "X-Source-Id",
+                        target_header = "X-Target-Id",
+                        log_only = true,
+                        darklaunch_mode = true
+                    })
+
+                    local response = assert(helpers.proxy_client():send({
+                        method = "GET",
+                        path = "/test",
+                        headers = {
+                            ["X-Source-Id"] = "test-integration",
+                            ["X-Target-Id"] = "darklaunch-blocked-customer"
+                        }
+                    }))
+
+                    local body = assert.res_status(200, response)
+                    local parsed_body = cjson.decode(body)
+
+                    assert.is_equal("block", parsed_body.headers["x-request-termination-decision"])
+                end)
+
+                it("should add allow decision as header when every customer has access", function()
+                    setup_test_env({
+                        source_header = "X-Source-Id",
+                        target_header = "X-Target-Id",
+                        log_only = true,
+                        darklaunch_mode = true
+                    })
+
+                    local setting_response = assert(helpers.admin_client():send({
+                        method = "POST",
+                        path = "/integration-access-settings",
+                        body = {
+                            source_identifier = "darklaunch-allow-every",
+                            target_identifier = "*"
+                        },
+                        headers = {
+                            ["Content-Type"] = "application/json"
+                        }
+                    }))
+
+                    assert.res_status(201, setting_response)
+
+                    local response = assert(helpers.proxy_client():send({
+                        method = "GET",
+                        path = "/test",
+                        headers = {
+                            ["X-Source-Id"] = "darklaunch-allow-every",
+                            ["X-Target-Id"] = "123456789"
+                        }
+                    }))
+
+                    local body = assert.res_status(200, response)
+                    local parsed_body = cjson.decode(body)
+
+                    assert.is_equal("allow", parsed_body.headers["x-request-termination-decision"])
+                end)
+
+                it("should add allow decision as header when specific customer has access", function()
+                    setup_test_env({
+                        source_header = "X-Source-Id",
+                        target_header = "X-Target-Id",
+                        log_only = true,
+                        darklaunch_mode = true
+                    })
+
+                    local setting_response = assert(helpers.admin_client():send({
+                        method = "POST",
+                        path = "/integration-access-settings",
+                        body = {
+                            source_identifier = "test-integration",
+                            target_identifier = "darklaunch-allow-customer"
+                        },
+                        headers = {
+                            ["Content-Type"] = "application/json"
+                        }
+                    }))
+
+                    assert.res_status(201, setting_response)
+
+                    local response = assert(helpers.proxy_client():send({
+                        method = "GET",
+                        path = "/test",
+                        headers = {
+                            ["X-Source-Id"] = "test-integration",
+                            ["X-Target-Id"] = "darklaunch-allow-customer"
+                        }
+                    }))
+
+                    local body = assert.res_status(200, response)
+                    local parsed_body = cjson.decode(body)
+
+                    assert.is_equal("allow", parsed_body.headers["x-request-termination-decision"])
+                end)
+
+            end)
+
+            context("with darklaunch mode disabled", function()
+
+                it("should not add decision as header", function()
+                    setup_test_env({
+                        source_header = "X-Source-Id",
+                        target_header = "X-Target-Id",
+                        log_only = true,
+                        darklaunch_mode = false
+                    })
+
+                    local response = assert(helpers.proxy_client():send({
+                        method = "GET",
+                        path = "/test",
+                        headers = {
+                            ["X-Source-Id"] = "test-integration",
+                            ["X-Target-Id"] = "darklaunch-blocked-customer"
+                        }
+                    }))
+
+                    local body = assert.res_status(200, response)
+                    local parsed_body = cjson.decode(body)
+
+                    assert.is_nil(parsed_body.headers["x-request-termination-decision"])
+                end)
+
+                it("should not add allow decision as header when every customer has access", function()
+                    setup_test_env({
+                        source_header = "X-Source-Id",
+                        target_header = "X-Target-Id",
+                        log_only = true,
+                        darklaunch_mode = false
+                    })
+
+                    local setting_response = assert(helpers.admin_client():send({
+                        method = "POST",
+                        path = "/integration-access-settings",
+                        body = {
+                            source_identifier = "darklaunch-allow-every",
+                            target_identifier = "*"
+                        },
+                        headers = {
+                            ["Content-Type"] = "application/json"
+                        }
+                    }))
+
+                    assert.res_status(201, setting_response)
+
+                    local response = assert(helpers.proxy_client():send({
+                        method = "GET",
+                        path = "/test",
+                        headers = {
+                            ["X-Source-Id"] = "darklaunch-allow-every",
+                            ["X-Target-Id"] = "123456789"
+                        }
+                    }))
+
+                    local body = assert.res_status(200, response)
+                    local parsed_body = cjson.decode(body)
+
+                    assert.is_nil(parsed_body.headers["x-request-termination-decision"])
+                end)
+
+                it("should add allow decision as header when specific customer has access", function()
+                    setup_test_env({
+                        source_header = "X-Source-Id",
+                        target_header = "X-Target-Id",
+                        log_only = true,
+                        darklaunch_mode = false
+                    })
+
+                    local setting_response = assert(helpers.admin_client():send({
+                        method = "POST",
+                        path = "/integration-access-settings",
+                        body = {
+                            source_identifier = "test-integration",
+                            target_identifier = "darklaunch-allow-customer"
+                        },
+                        headers = {
+                            ["Content-Type"] = "application/json"
+                        }
+                    }))
+
+                    assert.res_status(201, setting_response)
+
+                    local response = assert(helpers.proxy_client():send({
+                        method = "GET",
+                        path = "/test",
+                        headers = {
+                            ["X-Source-Id"] = "test-integration",
+                            ["X-Target-Id"] = "darklaunch-allow-customer"
+                        }
+                    }))
+
+                    local body = assert.res_status(200, response)
+                    local parsed_body = cjson.decode(body)
+
+                    assert.is_nil(parsed_body.headers["x-request-termination-decision"])
+                end)
+
+            end)
+
+        end)
+
+        context("with log only disabled and darklaunch enabled", function()
+
+            it("should not add block decision as header", function()
+                setup_test_env({
+                    message = "xxx",
+                    source_header = "X-Source-Id",
+                    target_header = "X-Target-Id",
+                    log_only = false,
+                    darklaunch_mode = true
+                })
+
+                local setting_response = assert(helpers.admin_client():send({
+                    method = "POST",
+                    path = "/integration-access-settings",
+                    body = {
+                        source_identifier = "darklaunch-without-log-only",
+                        target_identifier = "darklaunch-allow-customer"
+                    },
+                    headers = {
+                        ["Content-Type"] = "application/json"
+                    }
+                }))
+
+                assert.res_status(201, setting_response)
+
+                local response = assert(helpers.proxy_client():send({
+                    method = "GET",
+                    path = "/test",
+                    headers = {
+                        ["X-Source-Id"] = "darklaunch-without-log-only",
+                        ["X-Target-Id"] = "darklaunch-allow-customer"
+                    }
+                }))
+
+                local body = response:read_body()
+                local parsed_body = cjson.decode(body)
+
+                assert.is_nil(parsed_body.headers["x-request-termination-decision"])
+            end)
+
         end)
 
         context("with caching", function()
-
-            before_each(function()
-                helpers.db:truncate()
-            end)
 
             it("should not reject request if db is down", function()
                 setup_test_env({

@@ -30,6 +30,12 @@ local function query_access(dao, source_identifier, target_identifier)
     return #access_settings_general + #access_settings_specific > 0
 end
 
+local function set_darklaunch_header(has_access)
+    local decision = has_access and "allow" or "block"
+
+    kong.service.request.set_header("x-request-termination-decision", decision)
+end
+
 local Access = {}
 
 function Access.execute(conf)
@@ -59,6 +65,10 @@ function Access.execute(conf)
 
     local cache_key = singletons.dao.integration_access_settings:cache_key(source_header_value, target_header_value)
     local has_access = singletons.cache:get(cache_key, nil, query_access, singletons.dao, source_header_value, target_header_value)
+
+    if conf.log_only and conf.darklaunch_mode then
+        set_darklaunch_header(has_access)
+    end
 
     if not has_access then
         if conf.log_only then
