@@ -6,5 +6,6 @@ return {
         status_code = { type = "number", default = 403 },
         message = { type = "string" },
         log_only = { type = "boolean", default = false },
+        darklaunch_mode = { type = "boolean", default = false }
     }
 }

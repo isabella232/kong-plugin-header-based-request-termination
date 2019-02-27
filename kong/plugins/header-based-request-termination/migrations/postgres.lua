@@ -12,5 +12,14 @@ return {
         down = [[
               DROP TABLE integration_access_settings;
             ]]
-    }
+    },
+    {
+        name = "2019-02-27-100000_add_darklaunch_mode",
+        up = [[
+              ALTER TABLE integration_access_settings ADD COLUMN darklaunch_mode boolean DEFAULT FALSE;
+            ]],
+        down = [[
+              ALTER TABLE integration_access_settings DROP COLUMN darklaunch_mode;
+            ]]
+    },
 }
