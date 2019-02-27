@@ -2,24 +2,28 @@ local singletons = require "kong.singletons"
 local responses = require "kong.tools.responses"
 local Logger = require "logger"
 
+local ALL_ACCESS = "*"
+
 local function log_termination(message, query)
     Logger.getInstance(ngx):logWarning({
-        ["msg"] = message,
-        ["uri"] = ngx.var.request_uri,
-        ["source_identifier"] = query.source_identifier,
-        ["target_identifier"] = query.target_identifier
+        msg = message,
+        uri = ngx.var.request_uri,
+        source_identifier = query.source_identifier,
+        target_identifier = query.target_identifier
     })
 end
 
 local function query_access(dao, source_identifier, target_identifier)
     local query_params_general = {
         source_identifier = source_identifier,
-        target_identifier = "*"
+        target_identifier = ALL_ACCESS
     }
+
     local query_params_specific = {
         source_identifier = source_identifier,
         target_identifier = target_identifier
     }
+
     local access_settings_general = dao.integration_access_settings:find_all(query_params_general)
     local access_settings_specific = dao.integration_access_settings:find_all(query_params_specific)
 
@@ -41,6 +45,7 @@ function Access.execute(conf)
             })
             return
         end
+
         responses.send(conf.status_code, conf.message)
     end
 
@@ -63,6 +68,7 @@ function Access.execute(conf)
             })
             return
         end
+
         responses.send(conf.status_code, conf.message)
     end
 
