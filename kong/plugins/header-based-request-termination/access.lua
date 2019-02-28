@@ -40,10 +40,8 @@ end
 local Access = {}
 
 function Access.execute(conf)
-
-    local headers = ngx.req.get_headers()
-    local source_header_value = headers[conf.source_header]
-    local target_header_value = headers[conf.target_header]
+    local source_header_value = kong.request.get_header(conf.source_header)
+    local target_header_value = kong.request.get_header(conf.target_header)
 
     if not source_header_value then
         if conf.log_only then
@@ -82,7 +80,6 @@ function Access.execute(conf)
 
         return kong.response.exit(conf.status_code, { message = conf.message })
     end
-
 end
 
 return Access
