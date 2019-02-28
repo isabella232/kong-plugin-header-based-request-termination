@@ -1,29 +1,75 @@
+local PluginHandler = require "kong.plugins.header-based-request-termination.handler"
+local Access = require "kong.plugins.header-based-request-termination.access"
 
-local plugin_handler = require "kong.plugins.header-based-request-termination.handler"
+local old_ngx
 
-describe("header-based-request-termination plugin", function()
-  local old_ngx = _G.ngx
-  local mock_config
-  local handler
+local function mock_ngx()
+    old_ngx = _G.ngx
 
-  before_each(function()
-    local stubbed_ngx = {
-      ERR = "ERROR:",
-      header = {},
-      log = function(...) end,
-      say = function(...) end,
-      exit = function(...) end
+    local ngx = {
+        ERR = "ERROR:",
+        header = {},
+        ctx = {},
+        var = {},
+        log = function() end,
+        say = function() end,
+        exit = function() end
     }
 
-    _G.ngx = stubbed_ngx
-    stub(stubbed_ngx, "say")
-    stub(stubbed_ngx, "exit")
-    stub(stubbed_ngx, "log")
+    _G.ngx = ngx
+end
 
-    handler = plugin_handler()
-  end)
-
-  after_each(function()
+local function restore_mocked_ngx()
     _G.ngx = old_ngx
-  end)
+end
+
+local old_kong
+
+local function mock_kong()
+    old_kong = _G.kong
+
+    local kong = {
+        response = {
+            exit = function() end
+        }
+    }
+
+    mock(kong, true)
+
+    _G.kong = kong
+end
+
+local function restore_mocked_kong()
+    _G.kong = old_kong
+end
+
+describe("header-based-request-termination plugin", function()
+    local plugin_handler
+
+    before_each(function()
+        mock_ngx()
+        mock_kong()
+
+        plugin_handler = PluginHandler()
+    end)
+
+    after_each(function()
+        restore_mocked_ngx()
+        restore_mocked_kong()
+    end)
+
+    it("should block request on internal server error", function()
+        local old_access_execute = Access.execute
+
+        Access.execute = function()
+            error("DB is down")
+        end
+
+        plugin_handler:access()
+
+        Access.execute = old_access_execute
+
+        assert.stub(kong.response.exit).was.called_with(500, { message = "An unexpected error occurred" })
+    end)
+
 end)
