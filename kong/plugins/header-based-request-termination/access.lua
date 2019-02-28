@@ -14,21 +14,27 @@ local function log_termination(message, query)
     })
 end
 
-local function query_access(dao, source_identifier, target_identifier)
-    local query_params_general = {
+local function find_access_in_db(source_identifier, target_identifier)
+    local all_access_query = {
         source_identifier = source_identifier,
         target_identifier = ALL_ACCESS
     }
 
-    local query_params_specific = {
+    local target_access_query = {
         source_identifier = source_identifier,
         target_identifier = target_identifier
     }
 
-    local access_settings_general = dao.integration_access_settings:find_all(query_params_general)
-    local access_settings_specific = dao.integration_access_settings:find_all(query_params_specific)
+    local db = kong.dao.integration_access_settings
 
-    return #access_settings_general + #access_settings_specific > 0
+    return db:count(all_access_query) > 0 or db:count(target_access_query) > 0
+end
+
+local function find_access(source_identifier, target_identifier)
+    local cache_key = kong.dao.integration_access_settings:cache_key(source_identifier, target_identifier)
+    local has_access = kong.cache:get(cache_key, nil, find_access_in_db, source_identifier, target_identifier)
+
+    return has_access
 end
 
 local function set_darklaunch_header(has_access)
@@ -62,8 +68,7 @@ function Access.execute(conf)
         return
     end
 
-    local cache_key = kong.dao.integration_access_settings:cache_key(source_header_value, target_header_value)
-    local has_access = kong.cache:get(cache_key, nil, query_access, kong.dao, source_header_value, target_header_value)
+    local has_access = find_access(source_header_value, target_header_value)
 
     if conf.log_only and conf.darklaunch_mode then
         set_darklaunch_header(has_access)
