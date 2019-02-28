@@ -1,6 +1,6 @@
 local Object = require "classic"
 
-local singletons = require "kong.singletons"
+local kong = kong
 
 local function iterate_pages(dao)
     local page_size = 1000
@@ -42,7 +42,7 @@ function CacheWarmer:cache_all_entities(dao, key_retriever)
         local identifiers = key_retriever(entity)
         local cache_key = dao:cache_key(table.unpack(identifiers))
 
-        singletons.cache:get(cache_key, { ttl = self.ttl }, identity, entity)
+        kong.cache:get(cache_key, { ttl = self.ttl }, identity, entity)
     end
 end
 

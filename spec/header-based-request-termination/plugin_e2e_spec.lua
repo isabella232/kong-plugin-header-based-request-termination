@@ -333,6 +333,8 @@ describe("Plugin: header-based-request-termination (access)", function()
                     }
                 }))
 
+                assert.res_status(403, response)
+
                 local body = response:read_body()
                 local json = cjson.decode(body)
                 assert.same({ message = expectedMessage }, json)

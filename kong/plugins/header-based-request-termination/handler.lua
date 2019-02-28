@@ -3,6 +3,9 @@ local BasePlugin = require "kong.plugins.base_plugin"
 local InitWorker = require "kong.plugins.header-based-request-termination.init_worker"
 local Access = require "kong.plugins.header-based-request-termination.access"
 
+local kong = kong
+local ngx = ngx
+
 local HeaderBasedRequestTerminationHandler = BasePlugin:extend()
 
 HeaderBasedRequestTerminationHandler.PRIORITY = 902

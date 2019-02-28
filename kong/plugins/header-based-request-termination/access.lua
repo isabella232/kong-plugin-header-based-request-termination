@@ -1,6 +1,7 @@
-local singletons = require "kong.singletons"
-local responses = require "kong.tools.responses"
 local Logger = require "logger"
+
+local kong = kong
+local ngx = ngx
 
 local ALL_ACCESS = "*"
 
@@ -52,7 +53,7 @@ function Access.execute(conf)
             return
         end
 
-        responses.send(conf.status_code, conf.message)
+        return kong.response.exit(conf.status_code, { message = conf.message })
     end
 
     if not target_header_value then
@@ -63,8 +64,8 @@ function Access.execute(conf)
         return
     end
 
-    local cache_key = singletons.dao.integration_access_settings:cache_key(source_header_value, target_header_value)
-    local has_access = singletons.cache:get(cache_key, nil, query_access, singletons.dao, source_header_value, target_header_value)
+    local cache_key = kong.dao.integration_access_settings:cache_key(source_header_value, target_header_value)
+    local has_access = kong.cache:get(cache_key, nil, query_access, kong.dao, source_header_value, target_header_value)
 
     if conf.log_only and conf.darklaunch_mode then
         set_darklaunch_header(has_access)
@@ -79,7 +80,7 @@ function Access.execute(conf)
             return
         end
 
-        responses.send(conf.status_code, conf.message)
+        return kong.response.exit(conf.status_code, { message = conf.message })
     end
 
 end
