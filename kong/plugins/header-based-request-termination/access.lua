@@ -1,3 +1,4 @@
+local cjson = require "cjson"
 local Logger = require "logger"
 
 local kong = kong
@@ -57,7 +58,7 @@ function Access.execute(conf)
             return
         end
 
-        return kong.response.exit(conf.status_code, { message = conf.message })
+        return kong.response.exit(conf.status_code, cjson.decode(conf.message))
     end
 
     if not target_header_value then
@@ -83,7 +84,7 @@ function Access.execute(conf)
             return
         end
 
-        return kong.response.exit(conf.status_code, { message = conf.message })
+        return kong.response.exit(conf.status_code, cjson.decode(conf.message))
     end
 end
 

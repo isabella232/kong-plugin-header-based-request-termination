@@ -1,6 +1,7 @@
 local helpers = require "spec.helpers"
 local cjson = require "cjson"
 local TestHelper = require "spec.test_helper"
+local test_helpers = require "kong_client.spec.test_helpers"
 
 local function get_response_body(response)
     local body = assert.res_status(201, response)
@@ -22,7 +23,7 @@ describe("Plugin: header-based-request-termination (access)", function()
     end)
 
     teardown(function()
-        helpers.stop_kong(nil)
+        helpers.stop_kong()
     end)
 
     local service, route, plugin, consumer
@@ -33,6 +34,68 @@ describe("Plugin: header-based-request-termination (access)", function()
 
     after_each(function()
         helpers.db:truncate()
+    end)
+
+    describe("Config", function()
+
+        local kong_sdk, send_request, send_admin_request
+
+        before_each(function()
+            kong_sdk = test_helpers.create_kong_client()
+            send_request = test_helpers.create_request_sender(helpers.proxy_client())
+            send_admin_request = test_helpers.create_request_sender(helpers.admin_client())
+        end)
+
+        context("when config parameter is not given", function()
+
+            before_each(function()
+                service = kong_sdk.services:create({
+                    name = "EchoService",
+                    url = "http://mockbin:8080/request"
+                })
+
+                kong_sdk.routes:create_for_service(service.id, "/echo")
+            end)
+
+            it("should set default config values", function()
+                local plugin_response = kong_sdk.plugins:create({
+                    service_id = service.id,
+                    name = "header-based-request-termination",
+                    config = {
+                        source_header = 'X-Source-Header',
+                        target_header = 'X-Target-Header'
+                    }
+                })
+                local config = plugin_response.config
+
+                assert.is_equal(config.status_code, 403)
+                assert.is_equal(config.log_only, false)
+                assert.is_equal(config.darklaunch_mode, false)
+                assert.is_equal(config.message, '{"message": "Forbidden"}')
+            end)
+
+            local test_cases = {"Hello bye!", '""', '[{"message": "value"}]'}
+
+            for _, test_message in ipairs(test_cases) do
+                it("should throw error when message is not valid JSON object", function()
+                    local success, response = pcall(function()
+                        return kong_sdk.plugins:create({
+                            service_id = service.id,
+                            name = "header-based-request-termination",
+                            config = {
+                                source_header = 'X-Source-Header',
+                                target_header = 'X-Target-Header',
+                                message = test_message
+                            }
+                        })
+                    end)
+
+                    assert.is_equal(response.status, 400)
+                    assert.is_equal(response.body["config.message"], "message should be valid JSON object")
+                end)
+            end
+        end)
+
     end)
 
     describe("Admin API", function()
@@ -57,7 +120,7 @@ describe("Plugin: header-based-request-termination (access)", function()
         it("registered the plugin for the api", function()
             local res = assert(helpers.admin_client():send {
                 method = "GET",
-                path = "/plugins/" ..plugin.id,
+                path = "/plugins/" .. plugin.id,
             })
             assert.res_status(200, res)
         end)
@@ -256,6 +319,12 @@ describe("Plugin: header-based-request-termination (access)", function()
                 }))
 
                 assert.res_status(403, response)
+
+                local body = response:read_body()
+                local json = cjson.decode(body)
+
+                assert.is_equal(json.message, 'Forbidden')
+                assert.is_equal(response.headers['Content-Type'], 'application/json; charset=utf-8')
             end)
 
             it("should allow request when target identifier is configured as a wildcard in settings", function()
@@ -317,11 +386,10 @@ describe("Plugin: header-based-request-termination (access)", function()
         context("with custom reject config", function()
 
             it("should respond with custom message on rejection when configured accordingly", function()
-                local expectedMessage = "So long and thanks for all the fish!"
                 setup_test_env({
                     source_header = "X-Source-Id",
                     target_header = "X-Target-Id",
-                    message = expectedMessage
+                    message = '{"message":"So long and thanks for all the fish!"}'
                 })
 
                 local response = assert(helpers.proxy_client():send({
@@ -337,7 +405,9 @@ describe("Plugin: header-based-request-termination (access)", function()
 
                 local body = response:read_body()
                 local json = cjson.decode(body)
-                assert.same({ message = expectedMessage }, json)
+                assert.same({ message = "So long and thanks for all the fish!" }, json)
+                assert.is_equal(response.headers['Content-Type'], 'application/json; charset=utf-8')
+
             end)
 
             it("should respond with custom status code on rejection when configured accordingly", function()
@@ -610,7 +680,6 @@ describe("Plugin: header-based-request-termination (access)", function()
 
             it("should not add block decision as header", function()
                 setup_test_env({
-                    message = "xxx",
                     source_header = "X-Source-Id",
                     target_header = "X-Target-Id",
                     log_only = false,
