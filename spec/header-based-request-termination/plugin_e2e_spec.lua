@@ -628,7 +628,7 @@ describe("Plugin: header-based-request-termination (access)", function()
 
         context("with caching", function()
 
-            it("should not reject request if db is down", function()
+            it("should not reject request if db is wiped", function()
 
                 kong_sdk.plugins:create({
                     service_id = service.id,
@@ -658,6 +658,8 @@ describe("Plugin: header-based-request-termination (access)", function()
                 })
 
                 assert.is_equal(200, response.status)
+
+                helpers.db:truncate()
 
                 local response = send_request({
                     method = "GET",
