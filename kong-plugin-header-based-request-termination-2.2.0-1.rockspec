@@ -1,9 +1,9 @@
 package = "kong-plugin-header-based-request-termination"
-version = "2.1.1-1"
+version = "2.2.0-1"
 supported_platforms = {"linux", "macosx"}
 source = {
   url = "git+https://github.com/emartech/kong-plugin-header-based-request-termination.git",
-  tag = "2.1.1"
+  tag = "2.2.0"
 }
 description = {
   summary = "Terminate requests based on its headers.",
@@ -26,6 +26,6 @@ build = {
     ["kong.plugins.header-based-request-termination.daos"] = "kong/plugins/header-based-request-termination/daos.lua",
     ["kong.plugins.header-based-request-termination.handler"] = "kong/plugins/header-based-request-termination/handler.lua",
     ["kong.plugins.header-based-request-termination.init_worker"] = "kong/plugins/header-based-request-termination/init_worker.lua",
-    ["kong.plugins.header-based-request-termination.schema"] = "kong/plugins/header-based-request-termination/schema.lua",
+    ["kong.plugins.header-based-request-termination.schema"] = "kong/plugins/header-based-request-termination/schema.lua"
   }
 }
