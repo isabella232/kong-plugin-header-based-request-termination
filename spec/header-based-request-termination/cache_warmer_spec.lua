@@ -1,5 +1,10 @@
 local helpers = require "spec.helpers"
-local cjson = require "cjson"
+local test_helpers = require "kong_client.spec.test_helpers"
+
+local function send_admin_request(request)
+    local request_sender = test_helpers.create_request_sender(helpers.admin_client())
+    return request_sender(request)
+end
 
 describe("CacheWarmer", function()
 
@@ -14,25 +19,23 @@ describe("CacheWarmer", function()
     context("cache_all_entities", function()
 
         it("should store integration access setting in cache", function()
+
             local integration_access_setting = helpers.dao.integration_access_settings:insert({
                 source_identifier = "test-integration",
-                target_identifier = "1234567890",
+                target_identifier = "1234567890"
             })
 
             helpers.start_kong({ plugins = "header-based-request-termination" })
 
             local cache_key = helpers.dao.integration_access_settings:cache_key(integration_access_setting.source_identifier, integration_access_setting.target_identifier)
 
-            local raw_response = assert(helpers.admin_client():send {
+            local response = send_admin_request({
                 method = "GET",
-                path = "/cache/" .. cache_key,
+                path = "/cache/" .. cache_key
             })
 
-            local body = assert.res_status(200, raw_response)
-            local response = cjson.decode(body)
-
-            assert.is_equal(response.source_identifier, "test-integration")
-            assert.is_equal(response.target_identifier, "1234567890")
+            assert.is_equal("test-integration", response.body.source_identifier)
+            assert.is_equal("1234567890", response.body.target_identifier)
         end)
     end)
 end)
