@@ -15,6 +15,10 @@ local function log_termination(message, query)
     })
 end
 
+local function is_legal_access(source_header_value, target_header_value)
+    return not target_header_value or source_header_value == target_header_value
+end
+
 local function find_access_in_db(source_identifier, target_identifier)
     local all_access_query = {
         source_identifier = source_identifier,
@@ -61,29 +65,27 @@ function Access.execute(conf)
         return kong.response.exit(conf.status_code, cjson.decode(conf.message))
     end
 
-    if not target_header_value then
-        return
-    end
-
-    if source_header_value == target_header_value then
+    if is_legal_access(source_header_value, target_header_value) then
         return
     end
 
     local has_access = find_access(source_header_value, target_header_value)
 
-    if conf.log_only and conf.darklaunch_mode then
-        set_darklaunch_header(has_access)
-    end
+    if conf.log_only then
+        if conf.darklaunch_mode then
+            set_darklaunch_header(has_access)
+        end
 
-    if not has_access then
-        if conf.log_only then
+        if not has_access then
             log_termination("Request terminated based on headers", {
                 source_identifier = source_header_value,
                 target_identifier = target_header_value
             })
             return
         end
+    end
 
+    if not has_access then
         return kong.response.exit(conf.status_code, cjson.decode(conf.message))
     end
 end

@@ -4,20 +4,23 @@ local function decode_json(message_template)
     return cjson.decode(message_template)
 end
 
-local function is_object(message_template)
+local function is_json_object(message_template)
     local first_char = message_template:sub(1, 1)
     local last_char = message_template:sub(-1)
-    return first_char == '{' and last_char == '}'
+
+    return first_char == "{" and last_char == "}"
 end
 
 local function ensure_message_is_valid_json(message)
-    local ok = pcall(decode_json, message)
+    if is_json_object(message) then
+        local parse_succeeded = pcall(decode_json, message)
 
-    if not ok or not is_object(message) then
-        return false, "message should be valid JSON object"
+        if parse_succeeded then
+            return true
+        end
     end
 
-    return true
+    return false, "message should be valid JSON object"
 end
 
 return {
