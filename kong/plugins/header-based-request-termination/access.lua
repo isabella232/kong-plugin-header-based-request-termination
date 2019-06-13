@@ -9,7 +9,7 @@ local ALL_ACCESS = "*"
 local function log_termination(message, query)
     Logger.getInstance(ngx):logWarning({
         msg = message,
-        uri = ngx.var.request_uri,
+        uri = kong.request.get_path(),
         source_identifier = query.source_identifier,
         target_identifier = query.target_identifier
     })
