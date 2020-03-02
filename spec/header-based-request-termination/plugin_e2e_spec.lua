@@ -4,22 +4,34 @@ local test_helpers = require "kong_client.spec.test_helpers"
 describe("Plugin: header-based-request-termination (access)", function()
 
     local kong_sdk, send_request, send_admin_request
+    local service
+    local blueprints, db
 
     setup(function()
-        helpers.start_kong({ plugins = "header-based-request-termination" })
+        assert(
+            helpers.start_kong({ plugins = "header-based-request-termination" })
+        )
         kong_sdk = test_helpers.create_kong_client()
         send_request = test_helpers.create_request_sender(helpers.proxy_client())
         send_admin_request = test_helpers.create_request_sender(helpers.admin_client())
+        blueprints, db = helpers.get_db_utils()
     end)
 
     teardown(function()
         helpers.stop_kong()
     end)
 
-    local service
-
     before_each(function()
-        helpers.db:truncate()
+        assert(db:truncate())
+
+        send_admin_request({
+            method = "POST",
+            path = "/services",
+            body = {
+                name = "EchoService2",
+                url = "http://mockbin:8080/request"
+            }
+        })
 
         service = kong_sdk.services:create({
             name = "EchoService",
@@ -30,7 +42,7 @@ describe("Plugin: header-based-request-termination (access)", function()
     end)
 
     after_each(function()
-        helpers.db:truncate()
+        assert(db:truncate())
     end)
 
     describe("Config", function()
@@ -40,7 +52,7 @@ describe("Plugin: header-based-request-termination (access)", function()
             it("should set default config values", function()
 
                 local plugin_response = kong_sdk.plugins:create({
-                    service_id = service.id,
+                    service = { id = service.id },
                     name = "header-based-request-termination",
                     config = {
                         source_header = "X-Source-Id",
@@ -63,7 +75,7 @@ describe("Plugin: header-based-request-termination (access)", function()
 
                     local success, response = pcall(function()
                         return kong_sdk.plugins:create({
-                            service_id = service.id,
+                            service = { id = service.id },
                             name = "header-based-request-termination",
                             config = {
                                 source_header = "X-Source-Id",
@@ -74,7 +86,7 @@ describe("Plugin: header-based-request-termination (access)", function()
                     end)
 
                     assert.is_equal(400, response.status)
-                    assert.is_equal("message should be valid JSON object", response.body["config.message"])
+                    assert.is_equal("message should be valid JSON object", response.body.fields.config.message)
                 end)
             end
         end)
@@ -85,7 +97,7 @@ describe("Plugin: header-based-request-termination (access)", function()
 
         before_each(function()
             kong_sdk.plugins:create({
-                service_id = service.id,
+                service = { id = service.id },
                 name = "header-based-request-termination",
                 config = {
                     source_header = "X-Source-Id",
@@ -144,11 +156,11 @@ describe("Plugin: header-based-request-termination (access)", function()
 
                 send_admin_request(requestSettings)
 
-                local success, response = pcall(function()
+                local _, response = pcall(function()
                     return send_admin_request(requestSettings)
                 end)
 
-                assert.is_equal(400, response.status)
+                assert.is_equal(409, response.status)
             end)
 
             it("should save access information into the database for a specific customer id", function()
@@ -214,7 +226,7 @@ describe("Plugin: header-based-request-termination (access)", function()
 
             before_each(function()
                 kong_sdk.plugins:create({
-                    service_id = service.id,
+                    service = { id = service.id },
                     name = "header-based-request-termination",
                     config = {
                         source_header = "X-Source-Id",
@@ -331,7 +343,7 @@ describe("Plugin: header-based-request-termination (access)", function()
             it("should respond with custom message on rejection when configured accordingly", function()
 
                 kong_sdk.plugins:create({
-                    service_id = service.id,
+                    service = { id = service.id },
                     name = "header-based-request-termination",
                     config = {
                         source_header = "X-Source-Id",
@@ -357,7 +369,7 @@ describe("Plugin: header-based-request-termination (access)", function()
             it("should respond with custom status code on rejection when configured accordingly", function()
 
                 kong_sdk.plugins:create({
-                    service_id = service.id,
+                    service = { id = service.id },
                     name = "header-based-request-termination",
                     config = {
                         source_header = "X-Source-Id",
@@ -386,7 +398,7 @@ describe("Plugin: header-based-request-termination (access)", function()
 
                 before_each(function()
                     kong_sdk.plugins:create({
-                        service_id = service.id,
+                        service = { id = service.id },
                         name = "header-based-request-termination",
                         config = {
                             source_header = "X-Source-Id",
@@ -430,7 +442,7 @@ describe("Plugin: header-based-request-termination (access)", function()
 
                 before_each(function()
                     kong_sdk.plugins:create({
-                        service_id = service.id,
+                        service = { id = service.id },
                         name = "header-based-request-termination",
                         config = {
                             source_header = "X-Source-Id",
@@ -510,7 +522,7 @@ describe("Plugin: header-based-request-termination (access)", function()
 
                 before_each(function()
                     kong_sdk.plugins:create({
-                        service_id = service.id,
+                        service = { id = service.id },
                         name = "header-based-request-termination",
                         config = {
                             source_header = "X-Source-Id",
@@ -593,7 +605,7 @@ describe("Plugin: header-based-request-termination (access)", function()
             it("should not add block decision as header", function()
 
                 kong_sdk.plugins:create({
-                    service_id = service.id,
+                    service = { id = service.id },
                     name = "header-based-request-termination",
                     config = {
                         source_header = "X-Source-Id",
@@ -631,7 +643,7 @@ describe("Plugin: header-based-request-termination (access)", function()
             it("should not reject request if db is wiped", function()
 
                 kong_sdk.plugins:create({
-                    service_id = service.id,
+                    service = { id = service.id },
                     name = "header-based-request-termination",
                     config = {
                         source_header = "X-Source-Id",

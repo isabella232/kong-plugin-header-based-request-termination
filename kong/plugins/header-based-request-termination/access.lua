@@ -19,6 +19,15 @@ local function is_legal_access(source_header_value, target_header_value)
     return not target_header_value or source_header_value == target_header_value
 end
 
+local function db_count(access_object)
+    local query_result = kong.db.connector:query(string.format(
+            "SELECT count(1) FROM integration_access_settings WHERE source_identifier = '%s' AND target_identifier = '%s'",
+            access_object.source_identifier,
+            access_object.target_identifier))
+
+    return query_result[1]["count"]
+end
+
 local function find_access_in_db(source_identifier, target_identifier)
     local all_access_query = {
         source_identifier = source_identifier,
@@ -30,13 +39,11 @@ local function find_access_in_db(source_identifier, target_identifier)
         target_identifier = target_identifier
     }
 
-    local db = kong.dao.integration_access_settings
-
-    return db:count(all_access_query) > 0 or db:count(target_access_query) > 0
+    return db_count(all_access_query) > 0 or db_count(target_access_query) > 0
 end
 
 local function find_access(source_identifier, target_identifier)
-    local cache_key = kong.dao.integration_access_settings:cache_key(source_identifier, target_identifier)
+    local cache_key = kong.db.integration_access_settings:cache_key(source_identifier, target_identifier)
     local has_access = kong.cache:get(cache_key, nil, find_access_in_db, source_identifier, target_identifier)
 
     return has_access

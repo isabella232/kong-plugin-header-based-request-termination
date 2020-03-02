@@ -13,7 +13,7 @@ local InitWorker = {}
 function InitWorker.execute()
     local cache_warmer = CacheWarmer(ONE_DAY_IN_SECONDS)
 
-    cache_warmer:cache_all_entities(kong.dao.integration_access_settings, retrieve_key_from_access_setting)
+    cache_warmer:cache_all_entities(kong.db.integration_access_settings, retrieve_key_from_access_setting)
 end
 
 return InitWorker

@@ -1,39 +1,31 @@
-local crud = require "kong.api.crud_helpers"
+local endpoints = require "kong.api.endpoints"
 
-local unescape_uri = ngx.unescape_uri
+local integration_access_settings_schema = kong.db.integration_access_settings.schema
 
 return {
     ["/integration-access-settings"] = {
-        POST = function(self, dao_factory, helpers)
-            crud.post(self.params, dao_factory.integration_access_settings)
-        end,
-
-        GET = function(self, dao_factory, helpers)
-            crud.paginated_set(self, dao_factory.integration_access_settings)
-        end
+        schema = integration_access_settings_schema,
+        methods = {
+            POST = endpoints.post_collection_endpoint(integration_access_settings_schema),
+            GET = endpoints.get_collection_endpoint(integration_access_settings_schema),
+        }
     },
-    ["/integration-access-settings/:setting_id"] = {
-        before = function(self, dao_factory, helpers)
-            local settings, err = crud.find_by_id_or_field(
-                dao_factory.integration_access_settings,
-                nil,
-                unescape_uri(self.params.setting_id),
-                "id"
-            )
+    ["/integration-access-settings/:integration_access_settings"] = {
+        schema = integration_access_settings_schema,
+        methods = {
+            before = function(self, db, helpers)
 
-            if err then
-                return helpers.yield_error(err)
-            elseif next(settings) == nil then
-                return helpers.responses.send_HTTP_NOT_FOUND()
-            end
+                local access_setting, _, err_t = endpoints.select_entity(self, db, integration_access_settings_schema)
 
-            self.params.setting_id = nil
+                if err_t then
+                    return endpoints.handle_error(err_t)
+                end
+                if not access_setting then
+                    return kong.response.exit(404, { message = "Not found" })
+                end
+            end,
 
-            self.setting = settings[1]
-        end,
-
-        DELETE = function(self, dao_factory, helpers)
-            crud.delete(self.setting, dao_factory.integration_access_settings)
-        end
+            DELETE = endpoints.delete_entity_endpoint(integration_access_settings_schema)
+        }
     }
 }
