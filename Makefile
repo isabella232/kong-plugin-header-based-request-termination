@@ -27,6 +27,7 @@ publish: ## Build and publish plugin to luarocks
 
 test: ## Run tests
 	docker-compose run kong bash -c "cd /kong && kong migrations bootstrap && bin/busted /kong-plugins/spec -v"
+	docker-compose down
 
 test-only: ## Run tests
 	docker-compose run kong bash -c "cd /kong && kong migrations bootstrap && bin/busted /kong-plugins/spec -v --tags=only"
