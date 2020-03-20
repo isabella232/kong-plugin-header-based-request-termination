@@ -1,8 +1,9 @@
 # kong-plugin-boilerplate
 
 ## Install
- - clone the git repo
- - add luarock api key to environment variables (LUAROCKS_API_KEY)
+
+- clone the git repo
+- add luarock api key to environment variables (LUAROCKS_API_KEY)
 
 ## Build local development environment
 
@@ -12,7 +13,7 @@
 
 `make up`
 
-## Start local development environment
+## Stop local development environment
 
 `make down`
 
@@ -32,22 +33,23 @@
 
 - `make ssh`
 
-## Running all tests from project folder:
+## Running all tests from project folder
 
 `make test`
 
-## Running unit tests from project folder:
+## Running unit tests from project folder
 
 `make unit`
 
-## Running end to end tests from project folder:
+## Running end to end tests from project folder
 
 `make e2e`
 
 ## Publish new release
- - rename rockspec file to the new version
- - change then version and source.tag in rockspec file
- - commit the changes
- - create a new tag (ex.: git tag 0.1.0)
- - push the changes with the tag (git push --tag)
- - `make publish`
+
+- rename rockspec file to the new version
+- change then version and source.tag in rockspec file
+- commit the changes
+- create a new tag (ex.: git tag 0.1.0)
+- push the changes with the tag (git push --tag)
+- `make publish`
