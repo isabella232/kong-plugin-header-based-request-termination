@@ -1,7 +1,7 @@
 local helpers = require "spec.helpers"
 local test_helpers = require "kong_client.spec.test_helpers"
 
-describe("CacheWarmer #only", function()
+describe("CacheWarmer", function()
 
     local consumer
     local db
