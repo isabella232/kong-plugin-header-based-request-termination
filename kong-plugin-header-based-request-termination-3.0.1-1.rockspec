@@ -1,9 +1,9 @@
 package = "kong-plugin-header-based-request-termination"
-version = "3.0.0-1"
+version = "3.0.1-1"
 supported_platforms = {"linux", "macosx"}
 source = {
   url = "git+https://github.com/emartech/kong-plugin-header-based-request-termination.git",
-  tag = "3.0.0"
+  tag = "3.0.1"
 }
 description = {
   summary = "Terminate requests based on its headers.",
@@ -22,6 +22,7 @@ build = {
     ["kong.plugins.header-based-request-termination.migrations.cassandra"] = "kong/plugins/header-based-request-termination/migrations/cassandra.lua",
     ["kong.plugins.header-based-request-termination.migrations.000_base_header_based_request_termiantion"] = "kong/plugins/header-based-request-termination/migrations/000_base_header_based_request_termiantion.lua",
     ["kong.plugins.header-based-request-termination.migrations.001_120_to_200"] = "kong/plugins/header-based-request-termination/migrations/001_120_to_200.lua",
+    ["kong.plugins.header-based-request-termination.migrations.002_300_to_301"] = "kong/plugins/header-based-request-termination/migrations/002_300_to_301.lua",
     ["kong.plugins.header-based-request-termination.migrations.init"] = "kong/plugins/header-based-request-termination/migrations/init.lua",
     ["kong.plugins.header-based-request-termination.access"] = "kong/plugins/header-based-request-termination/access.lua",
     ["kong.plugins.header-based-request-termination.api"] = "kong/plugins/header-based-request-termination/api.lua",
